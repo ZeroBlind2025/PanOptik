@@ -1,5 +1,5 @@
 import 'package:dio/dio.dart';
-import 'package:supabase_flutter/supabase_flutter.dart';
+import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import '../config/environment.dart';
 
 class ApiService {
@@ -8,7 +8,10 @@ class ApiService {
   ApiService._internal();
 
   late final Dio _dio;
+  final _secureStorage = const FlutterSecureStorage();
   bool _initialized = false;
+
+  static const _tokenKey = 'access_token';
 
   void initialize() {
     if (_initialized) return;
@@ -24,23 +27,44 @@ class ApiService {
 
     _dio.interceptors.add(InterceptorsWrapper(
       onRequest: (options, handler) async {
-        // Add Supabase auth token to all requests
-        final session = Supabase.instance.client.auth.currentSession;
-        if (session != null) {
-          options.headers['Authorization'] = 'Bearer ${session.accessToken}';
+        // Add JWT token to all requests
+        final token = await _secureStorage.read(key: _tokenKey);
+        if (token != null) {
+          options.headers['Authorization'] = 'Bearer $token';
         }
         handler.next(options);
       },
-      onError: (error, handler) {
+      onError: (error, handler) async {
         // Handle 401 errors (token expired)
         if (error.response?.statusCode == 401) {
-          Supabase.instance.client.auth.signOut();
+          await clearToken();
         }
         handler.next(error);
       },
     ));
 
     _initialized = true;
+  }
+
+  // Store JWT token
+  Future<void> setToken(String token) async {
+    await _secureStorage.write(key: _tokenKey, value: token);
+  }
+
+  // Get current token
+  Future<String?> getToken() async {
+    return _secureStorage.read(key: _tokenKey);
+  }
+
+  // Clear token (logout)
+  Future<void> clearToken() async {
+    await _secureStorage.delete(key: _tokenKey);
+  }
+
+  // Check if user is authenticated
+  Future<bool> isAuthenticated() async {
+    final token = await getToken();
+    return token != null;
   }
 
   // Generic GET request

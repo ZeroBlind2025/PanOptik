@@ -1,91 +1,123 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:supabase_flutter/supabase_flutter.dart';
-
 import '../services/auth_service.dart';
 
 final authServiceProvider = Provider<AuthService>((ref) {
   return AuthService();
 });
 
-final authStateProvider = StreamProvider<User?>((ref) {
+// Check authentication status
+final isAuthenticatedProvider = FutureProvider<bool>((ref) async {
   final authService = ref.watch(authServiceProvider);
-  return authService.authStateChanges.map((state) => state.session?.user);
+  return authService.isAuthenticated;
 });
 
-final currentUserProvider = Provider<User?>((ref) {
-  return ref.watch(authStateProvider).valueOrNull;
+// Current user email
+final currentUserEmailProvider = FutureProvider<String?>((ref) async {
+  final authService = ref.watch(authServiceProvider);
+  return authService.currentUserEmail;
 });
 
-final isAuthenticatedProvider = Provider<bool>((ref) {
-  return ref.watch(currentUserProvider) != null;
-});
+// Auth state for UI
+class AuthState {
+  final bool isLoading;
+  final String? error;
+  final bool isAuthenticated;
+  final Map<String, dynamic>? user;
 
-class AuthNotifier extends StateNotifier<AsyncValue<void>> {
+  const AuthState({
+    this.isLoading = false,
+    this.error,
+    this.isAuthenticated = false,
+    this.user,
+  });
+
+  AuthState copyWith({
+    bool? isLoading,
+    String? error,
+    bool? isAuthenticated,
+    Map<String, dynamic>? user,
+  }) {
+    return AuthState(
+      isLoading: isLoading ?? this.isLoading,
+      error: error,
+      isAuthenticated: isAuthenticated ?? this.isAuthenticated,
+      user: user ?? this.user,
+    );
+  }
+}
+
+class AuthNotifier extends StateNotifier<AuthState> {
   final AuthService _authService;
 
-  AuthNotifier(this._authService) : super(const AsyncValue.data(null));
+  AuthNotifier(this._authService) : super(const AuthState());
 
-  Future<void> signIn({
-    required String email,
-    required String password,
-  }) async {
-    state = const AsyncValue.loading();
-    try {
-      await _authService.signIn(email: email, password: password);
-      state = const AsyncValue.data(null);
-    } catch (e, st) {
-      state = AsyncValue.error(e, st);
+  Future<void> checkAuth() async {
+    state = state.copyWith(isLoading: true);
+    final isAuthenticated = await _authService.isAuthenticated;
+    if (isAuthenticated) {
+      final user = await _authService.getCurrentUser();
+      state = AuthState(isAuthenticated: true, user: user);
+    } else {
+      state = const AuthState(isAuthenticated: false);
     }
   }
 
-  Future<void> signUp({
+  Future<bool> signIn({
     required String email,
     required String password,
   }) async {
-    state = const AsyncValue.loading();
-    try {
-      await _authService.signUp(email: email, password: password);
-      state = const AsyncValue.data(null);
-    } catch (e, st) {
-      state = AsyncValue.error(e, st);
+    state = state.copyWith(isLoading: true, error: null);
+    final result = await _authService.signIn(email: email, password: password);
+
+    if (result.success) {
+      state = AuthState(isAuthenticated: true, user: result.user);
+      return true;
+    } else {
+      state = AuthState(isAuthenticated: false, error: result.error);
+      return false;
+    }
+  }
+
+  Future<bool> signUp({
+    required String email,
+    required String password,
+  }) async {
+    state = state.copyWith(isLoading: true, error: null);
+    final result = await _authService.signUp(email: email, password: password);
+
+    if (result.success) {
+      state = AuthState(isAuthenticated: true, user: result.user);
+      return true;
+    } else {
+      state = AuthState(isAuthenticated: false, error: result.error);
+      return false;
     }
   }
 
   Future<void> signOut() async {
-    state = const AsyncValue.loading();
-    try {
-      await _authService.signOut();
-      state = const AsyncValue.data(null);
-    } catch (e, st) {
-      state = AsyncValue.error(e, st);
+    state = state.copyWith(isLoading: true);
+    await _authService.signOut();
+    state = const AuthState(isAuthenticated: false);
+  }
+
+  Future<bool> signInWithBiometric() async {
+    state = state.copyWith(isLoading: true, error: null);
+    final result = await _authService.signInWithBiometric();
+
+    if (result.success) {
+      state = AuthState(isAuthenticated: true, user: result.user);
+      return true;
+    } else {
+      state = AuthState(isAuthenticated: false, error: result.error);
+      return false;
     }
   }
 
-  Future<void> resetPassword(String email) async {
-    state = const AsyncValue.loading();
-    try {
-      await _authService.resetPassword(email);
-      state = const AsyncValue.data(null);
-    } catch (e, st) {
-      state = AsyncValue.error(e, st);
-    }
-  }
-
-  Future<void> signInWithBiometric() async {
-    state = const AsyncValue.loading();
-    try {
-      final result = await _authService.signInWithBiometric();
-      if (result == null) {
-        throw Exception('No stored credentials');
-      }
-      state = const AsyncValue.data(null);
-    } catch (e, st) {
-      state = AsyncValue.error(e, st);
-    }
+  void clearError() {
+    state = state.copyWith(error: null);
   }
 }
 
-final authNotifierProvider =
-    StateNotifierProvider<AuthNotifier, AsyncValue<void>>((ref) {
+final authNotifierProvider = StateNotifierProvider<AuthNotifier, AuthState>((ref) {
   return AuthNotifier(ref.watch(authServiceProvider));
 });

@@ -68,20 +68,20 @@ model Alert {
   user         User      @relation(fields: [userId], references: [id], onDelete: Cascade)
   assetId      String?
   asset        Asset?    @relation(fields: [assetId], references: [id], onDelete: Cascade)
-  type         String
-  triggerValue String?
+  type         String    // price_above, price_below, date_reminder, recurring_reminder
+  triggerValue Decimal?  @db.Decimal(18, 8) // Price threshold for price alerts
   message      String
-  nextFire     DateTime?
-  recurring    Boolean   @default(false)
-  rrule        String?
+  nextFire     DateTime? // Next scheduled fire time
+  rrule        String?   // iCal RRULE for recurring alerts
   enabled      Boolean   @default(true)
-  lastFired    DateTime?
+  lastFired    DateTime? // Last time this alert fired
   createdAt    DateTime  @default(now())
 
   @@index([userId])
   @@index([assetId])
   @@index([nextFire])
   @@index([enabled])
+  @@index([type])
 }
 
 model Subscription {

@@ -4,6 +4,8 @@ import {
   IsNumber,
   IsEnum,
   Min,
+  ValidateIf,
+  IsNotEmpty,
 } from 'class-validator';
 
 export enum AssetType {
@@ -17,23 +19,31 @@ export enum AssetType {
   COMMODITY = 'commodity',
 }
 
+/**
+ * Asset creation rules:
+ * - If ticker is provided: quantity is required, manualValue is ignored
+ * - If ticker is not provided: manualValue is required, quantity is ignored
+ */
 export class CreateAssetDto {
   @IsEnum(AssetType)
   type: AssetType;
 
   @IsString()
+  @IsNotEmpty()
   name: string;
 
   @IsOptional()
   @IsString()
   ticker?: string;
 
-  @IsOptional()
+  // Quantity is required when ticker is provided
+  @ValidateIf((o) => o.ticker !== undefined && o.ticker !== null && o.ticker !== '')
   @IsNumber()
   @Min(0)
   quantity?: number;
 
-  @IsOptional()
+  // ManualValue is required when ticker is NOT provided
+  @ValidateIf((o) => !o.ticker)
   @IsNumber()
   @Min(0)
   manualValue?: number;
