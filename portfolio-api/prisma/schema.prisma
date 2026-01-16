@@ -1,0 +1,100 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id                 String         @id @default(uuid())
+  supabaseId         String         @unique
+  email              String         @unique
+  createdAt          DateTime       @default(now())
+  updatedAt          DateTime       @updatedAt
+  subscriptionStatus String         @default("free")
+  fcmToken           String?
+  assets             Asset[]
+  alerts             Alert[]
+  subscription       Subscription?
+
+  @@index([supabaseId])
+  @@index([email])
+}
+
+model Asset {
+  id           String    @id @default(uuid())
+  userId       String
+  user         User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  type         String
+  name         String
+  ticker       String?
+  quantity     Decimal?  @db.Decimal(18, 8)
+  manualValue  Decimal?  @db.Decimal(18, 2)
+  costBasis    Decimal?  @db.Decimal(18, 2)
+  currency     String    @default("USD")
+  country      String?
+  sector       String?
+  riskCategory String?
+  notes        String?
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+  alerts       Alert[]
+
+  @@index([userId])
+  @@index([ticker])
+}
+
+model Price {
+  id            String   @id @default(uuid())
+  ticker        String
+  assetType     String
+  currency      String   @default("USD")
+  provider      String
+  price         Decimal  @db.Decimal(18, 8)
+  change        Decimal? @db.Decimal(18, 8)
+  changePercent Decimal? @db.Decimal(8, 4)
+  previousClose Decimal? @db.Decimal(18, 8)
+  fetchedAt     DateTime @default(now())
+
+  @@unique([ticker, assetType, currency])
+  @@index([ticker])
+  @@index([fetchedAt])
+}
+
+model Alert {
+  id           String    @id @default(uuid())
+  userId       String
+  user         User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  assetId      String?
+  asset        Asset?    @relation(fields: [assetId], references: [id], onDelete: Cascade)
+  type         String
+  triggerValue String?
+  message      String
+  nextFire     DateTime?
+  recurring    Boolean   @default(false)
+  rrule        String?
+  enabled      Boolean   @default(true)
+  lastFired    DateTime?
+  createdAt    DateTime  @default(now())
+
+  @@index([userId])
+  @@index([assetId])
+  @@index([nextFire])
+  @@index([enabled])
+}
+
+model Subscription {
+  id           String    @id @default(uuid())
+  userId       String    @unique
+  user         User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  revenuecatId String    @unique
+  status       String
+  plan         String?
+  expiresAt    DateTime?
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+
+  @@index([revenuecatId])
+}

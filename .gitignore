@@ -1,0 +1,52 @@
+# Dependencies
+node_modules/
+.pnp
+.pnp.js
+
+# Build outputs
+dist/
+build/
+.dart_tool/
+.packages
+
+# Environment
+.env
+.env.local
+.env.*.local
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+.DS_Store
+
+# Flutter
+portfolio_app/.dart_tool/
+portfolio_app/build/
+portfolio_app/.packages
+portfolio_app/.flutter-plugins
+portfolio_app/.flutter-plugins-dependencies
+portfolio_app/ios/Pods/
+portfolio_app/ios/.symlinks/
+portfolio_app/android/.gradle/
+portfolio_app/android/app/build/
+portfolio_app/*.iml
+
+# NestJS
+portfolio-api/dist/
+portfolio-api/node_modules/
+
+# Prisma
+portfolio-api/generated/
+
+# Logs
+*.log
+npm-debug.log*
+
+# Test
+coverage/
+
+# Misc
+*.tgz
+.cache
