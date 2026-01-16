@@ -26,13 +26,13 @@ PanOptik is a unified investment portfolio tracking mobile application with a Ne
 | **Main Entry** | ✅ Complete | `src/main.ts` |
 | **Configuration** | ✅ Complete | `src/config/configuration.ts` |
 | **Prisma Service** | ✅ Complete | `src/prisma.service.ts` |
-| **Railway Deployment** | ✅ Complete | `railway.json`, `Procfile` |
+| **Railway Deployment** | ✅ Complete | `railway.json`, `Procfile`, `nixpacks.toml` |
 
 #### Modules
 
 | Module | Controller | Service | DTOs | Guards/Decorators |
 |--------|------------|---------|------|-------------------|
-| **Auth** | ✅ | ✅ | - | ✅ JWT Strategy |
+| **Auth** | ✅ | ✅ | ✅ Register/Login | ✅ JWT Strategy |
 | **Users** | - | ✅ | - | - |
 | **Assets** | ✅ | ✅ | ✅ Create/Update | - |
 | **Prices** | ✅ | ✅ | - | ✅ 3 Providers |
@@ -42,6 +42,13 @@ PanOptik is a unified investment portfolio tracking mobile application with a Ne
 | **Subscriptions** | ✅ | ✅ | - | - |
 | **Webhooks** | ✅ | - | - | - |
 | **Health** | ✅ | - | - | - |
+
+#### Authentication
+
+- **Local JWT auth** with bcrypt password hashing
+- `POST /auth/register` - Create new account
+- `POST /auth/login` - Login and receive JWT
+- `GET /auth/me` - Get current user (protected)
 
 #### Price Providers
 
@@ -91,7 +98,7 @@ PanOptik is a unified investment portfolio tracking mobile application with a Ne
 | Service | File | Purpose |
 |---------|------|---------|
 | API Service | `lib/services/api_service.dart` | HTTP client |
-| Auth Service | `lib/services/auth_service.dart` | Supabase auth |
+| Auth Service | `lib/services/auth_service.dart` | JWT auth |
 | Assets Service | `lib/services/assets_service.dart` | Asset CRUD |
 | Prices Service | `lib/services/prices_service.dart` | Price fetching |
 | Alerts Service | `lib/services/alerts_service.dart` | Alert management |
@@ -142,8 +149,8 @@ PanOptik is a unified investment portfolio tracking mobile application with a Ne
 │      User       │     │      Asset      │
 ├─────────────────┤     ├─────────────────┤
 │ id              │────<│ userId          │
-│ supabaseId      │     │ type            │
-│ email           │     │ name            │
+│ email           │     │ type            │
+│ passwordHash    │     │ name            │
 │ subscriptionStat│     │ ticker          │
 │ fcmToken        │     │ quantity        │
 │ createdAt       │     │ manualValue     │
@@ -199,6 +206,32 @@ PanOptik is a unified investment portfolio tracking mobile application with a Ne
 | `portfolio-api/.env.example` | Environment variable template |
 | `portfolio-api/railway.json` | Railway deployment config |
 | `portfolio-api/Procfile` | Railway process file |
+| `portfolio-api/nixpacks.toml` | Nixpacks build config |
+
+---
+
+## Environment Variables
+
+```bash
+# Database
+DATABASE_URL=postgresql://user:password@host:5432/portfolio
+
+# JWT Authentication
+JWT_SECRET=your-secret-key-at-least-32-characters-long
+
+# Pricing APIs
+POLYGON_API_KEY=your-polygon-api-key
+COINGECKO_API_KEY=your-coingecko-api-key
+METALS_API_KEY=your-metals-api-key
+
+# Firebase (for push notifications)
+FIREBASE_PROJECT_ID=your-firebase-project-id
+FIREBASE_PRIVATE_KEY="-----BEGIN PRIVATE KEY-----\n...\n-----END PRIVATE KEY-----\n"
+FIREBASE_CLIENT_EMAIL=firebase-adminsdk@your-project.iam.gserviceaccount.com
+
+# RevenueCat
+REVENUECAT_WEBHOOK_SECRET=your-webhook-secret
+```
 
 ---
 
@@ -206,15 +239,15 @@ PanOptik is a unified investment portfolio tracking mobile application with a Ne
 
 ### Immediate (Before First Deploy)
 
-- [ ] Create Supabase project and configure auth
-- [ ] Set up Railway project and add environment variables
+- [ ] Set up Railway project with PostgreSQL database
+- [ ] Add environment variables in Railway
+- [ ] Set Railway root directory to `portfolio-api`
 - [ ] Run `npx prisma migrate deploy` to create database tables
 - [ ] Install Flutter SDK on development machine
 - [ ] Run `flutter pub get` in `portfolio_app/`
 
 ### Backend Tasks
 
-- [ ] Add input validation with class-validator
 - [ ] Add rate limiting
 - [ ] Add request logging middleware
 - [ ] Write unit tests for services
@@ -223,6 +256,7 @@ PanOptik is a unified investment portfolio tracking mobile application with a Ne
 ### Mobile App Tasks
 
 - [ ] Generate Flutter project files (`flutter create .` in portfolio_app)
+- [ ] Update auth service to use local JWT instead of Supabase
 - [ ] Configure iOS/Android build settings
 - [ ] Set up Firebase project for FCM
 - [ ] Configure RevenueCat products
@@ -231,7 +265,7 @@ PanOptik is a unified investment portfolio tracking mobile application with a Ne
 
 ### Integration Tasks
 
-- [ ] Test Supabase auth flow end-to-end
+- [ ] Test auth flow end-to-end (register/login)
 - [ ] Test price fetching from all 3 APIs
 - [ ] Test alert triggering and push notifications
 - [ ] Test RevenueCat webhook handling
@@ -245,8 +279,8 @@ PanOptik is a unified investment portfolio tracking mobile application with a Ne
 |-------|------------|
 | Mobile | Flutter 3.x, Riverpod, Hive, fl_chart |
 | Backend | NestJS, Prisma, PostgreSQL |
-| Auth | Supabase Auth (JWT/JWKS) |
-| Database | PostgreSQL (via Supabase or Railway) |
+| Auth | Local JWT with bcrypt |
+| Database | PostgreSQL (Railway) |
 | Pricing | Polygon.io, CoinGecko, Metals-API |
 | Subscriptions | RevenueCat |
 | Push Notifications | Firebase Cloud Messaging |
@@ -257,7 +291,7 @@ PanOptik is a unified investment portfolio tracking mobile application with a Ne
 
 ## File Count
 
-- **Backend files:** 42
+- **Backend files:** 45
 - **Flutter files:** 46
-- **Config/docs:** 10
-- **Total:** 108 files
+- **Config/docs:** 11
+- **Total:** 112 files

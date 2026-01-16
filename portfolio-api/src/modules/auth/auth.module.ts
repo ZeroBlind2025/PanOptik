@@ -14,8 +14,8 @@ import { PrismaService } from '../../prisma.service';
     JwtModule.registerAsync({
       imports: [ConfigModule],
       useFactory: async (configService: ConfigService) => ({
-        secret: configService.get<string>('supabase.jwtSecret'),
-        signOptions: { expiresIn: '1d' },
+        secret: configService.get<string>('jwt.secret'),
+        signOptions: { expiresIn: '7d' },
       }),
       inject: [ConfigService],
     }),
