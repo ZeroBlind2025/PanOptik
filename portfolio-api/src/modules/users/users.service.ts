@@ -12,9 +12,9 @@ export class UsersService {
     });
   }
 
-  async findBySupabaseId(supabaseId: string) {
+  async findByEmail(email: string) {
     return this.prisma.user.findUnique({
-      where: { supabaseId },
+      where: { email },
       include: { subscription: true },
     });
   }

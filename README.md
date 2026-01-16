@@ -8,7 +8,7 @@ A mobile application for personal investment portfolio tracking. Log all assets 
 
 ## Scope Lock
 
-- **Auth:** Supabase Auth is the source of truth. Backend validates Supabase JWT. No custom password auth.
+- **Auth:** Local JWT auth with bcrypt password hashing. No third-party auth.
 - **Asset math:** Ticker assets store `quantity`, value derived from `quantity * price`. Non-ticker assets store `manualValue`.
 - **Pricing:** Polygon, CoinGecko, Metals-API only in v1. No broker integrations.
 - **Tier enforcement:** Server-side (not UI-only).
@@ -89,11 +89,10 @@ Risk scores and exposure charts show current state only.
 - Node.js + TypeScript
 - NestJS
 - Prisma ORM
-- PostgreSQL (Supabase)
+- PostgreSQL
 
 ### Services
 
-- Supabase Auth (source of truth)
 - Firebase Cloud Messaging
 - RevenueCat
 - PostHog
@@ -137,9 +136,6 @@ Provider swaps are v2.
 
 ```
 DATABASE_URL=
-SUPABASE_URL=
-SUPABASE_ANON_KEY=
-SUPABASE_SERVICE_KEY=
 JWT_SECRET=
 POLYGON_API_KEY=
 COINGECKO_API_KEY=
@@ -156,8 +152,6 @@ SENTRY_DSN=
 ```dart
 class Environment {
   static const apiUrl = String.fromEnvironment('API_URL');
-  static const supabaseUrl = String.fromEnvironment('SUPABASE_URL');
-  static const supabaseAnonKey = String.fromEnvironment('SUPABASE_ANON_KEY');
   static const revenueCatApiKey = String.fromEnvironment('REVENUECAT_API_KEY');
   static const posthogApiKey = String.fromEnvironment('POSTHOG_API_KEY');
   static const sentryDsn = String.fromEnvironment('SENTRY_DSN');
@@ -209,9 +203,9 @@ flutter build appbundle --release
 
 ### Auth
 
-- `GET /auth/me` (returns current user from Supabase token)
-
-*Note: Auth handled by Supabase directly. Backend validates JWT only.*
+- `POST /auth/register` (create account)
+- `POST /auth/login` (login, returns JWT)
+- `GET /auth/me` (returns current user, requires JWT)
 
 ### Assets
 
@@ -254,8 +248,8 @@ flutter build appbundle --release
 
 ```sql
 - id (uuid, primary key)
-- supabaseId (unique)
 - email (unique)
+- passwordHash
 - createdAt
 - updatedAt
 - subscriptionStatus
@@ -301,13 +295,13 @@ flutter build appbundle --release
 - id (uuid, primary key)
 - userId (foreign key)
 - assetId (foreign key, nullable)
-- type
-- triggerValue
+- type (price_above, price_below, date_reminder, recurring_reminder)
+- triggerValue (decimal, for price alerts)
 - message
 - nextFire
-- recurring
 - rrule (for recurring)
 - enabled
+- lastFired
 - createdAt
 ```
 

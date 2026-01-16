@@ -19,29 +19,25 @@ class User {
   final String id;
 
   @HiveField(1)
-  final String supabaseId;
-
-  @HiveField(2)
   final String email;
 
-  @HiveField(3)
+  @HiveField(2)
   final DateTime createdAt;
 
-  @HiveField(4)
-  final DateTime updatedAt;
+  @HiveField(3)
+  final DateTime? updatedAt;
 
-  @HiveField(5)
+  @HiveField(4)
   final SubscriptionStatus subscriptionStatus;
 
-  @HiveField(6)
+  @HiveField(5)
   final String? fcmToken;
 
   User({
     required this.id,
-    required this.supabaseId,
     required this.email,
     required this.createdAt,
-    required this.updatedAt,
+    this.updatedAt,
     this.subscriptionStatus = SubscriptionStatus.free,
     this.fcmToken,
   });
@@ -53,7 +49,6 @@ class User {
 
   User copyWith({
     String? id,
-    String? supabaseId,
     String? email,
     DateTime? createdAt,
     DateTime? updatedAt,
@@ -62,7 +57,6 @@ class User {
   }) {
     return User(
       id: id ?? this.id,
-      supabaseId: supabaseId ?? this.supabaseId,
       email: email ?? this.email,
       createdAt: createdAt ?? this.createdAt,
       updatedAt: updatedAt ?? this.updatedAt,
